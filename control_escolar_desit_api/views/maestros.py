@@ -27,6 +27,25 @@ class MaestrosAll(generics.CreateAPIView):
         return Response(lista, 200)
     
 class MaestrosView(generics.CreateAPIView):
+    # Permisos por método (sobrescribe el comportamiento default)
+    # Verifica que el usuario esté autenticado para las peticiones GET, PUT y DELETE
+    def get_permissions(self):
+        if self.request.method in ['GET', 'PUT', 'DELETE']:
+            return [permissions.IsAuthenticated()]
+        return []  # POST no requiere autenticación
+    
+    #Obtener maestro por ID
+    # TODO: Agregar obtención de maestro por ID
+    def get(self, request, *args, **kwargs):
+        maestro = get_object_or_404(Maestros, id = request.GET.get("id"))
+        maestro_data = MaestroSerializer(maestro, many=False).data
+        if "materias_json" in maestro_data:
+            try:
+                maestro_data["materias_json"] = json.loads(maestro_data["materias_json"])
+            except Exception:
+                maestro_data["materias_json"] = []
+        return Response(maestro_data, 200)
+    
     #Registrar nuevo usuario maestro
     @transaction.atomic
     def post(self, request, *args, **kwargs):
@@ -67,6 +86,33 @@ class MaestrosView(generics.CreateAPIView):
     
     # Actualizar datos del maestro
     # TODO: Agregar actualización de maestros
+    @transaction.atomic
+    def put(self, request, *args, **kwargs):
+        maestro = get_object_or_404(Maestros, id=request.GET.get("id"))
+        user = maestro.user
+
+        # Actualizar datos del usuario
+        user.first_name = request.data.get("first_name", user.first_name)
+        user.last_name = request.data.get("last_name", user.last_name)
+        user.email = request.data.get("email", user.email)
+        user.username = request.data.get("email", user.username)  # Asumimos que el username es el email
+        user.save()
+
+        # Actualizar datos del maestro
+        maestro.id_trabajador = request.data.get("id_trabajador", maestro.id_trabajador)
+        maestro.fecha_nacimiento = request.data.get("fecha_nacimiento", maestro.fecha_nacimiento)
+        maestro.telefono = request.data.get("telefono", maestro.telefono)
+        maestro.rfc = request.data.get("rfc", maestro.rfc).upper()
+        maestro.cubiculo = request.data.get("cubiculo", maestro.cubiculo)
+        maestro.area_investigacion = request.data.get("area_investigacion", maestro.area_investigacion)
+        
+        materias_json = request.data.get("materias_json", None)
+        if materias_json is not None:
+            maestro.materias_json = json.dumps(materias_json)
+
+        maestro.save()
+        return Response({"details":"Maestro actualizado correctamente"}, 200)
+    
     # Eliminar maestro con delete (Borrar realmente)
     @transaction.atomic
     def delete(self, request, *args, **kwargs):
@@ -76,6 +122,20 @@ class MaestrosView(generics.CreateAPIView):
             return Response({"details":"Maestro eliminado"},200)
         except Exception as e:
             return Response({"details":"Algo pasó al eliminar"},400)
+        
+        
+class MaestrosAll(generics.CreateAPIView):
+            permissions_classes = (permissions.IsAuthenticated,)
+            def get(self, request, *args, **kwargs):
+                maestros = Maestros.objects.filter(user__is_active=1).order_by("id")
+                lista = MaestroSerializer(maestros, many=True).data
+                for maestro in lista:
+                    if isinstance(maestro, dict) and "materias_json" in maestro:
+                        try:
+                            maestro["materias_json"] = json.loads(maestro["materias_json"])
+                        except Exception:
+                            maestro["materias_json"] = []
+                return Response(lista, 200)
     
     #Eliminar maestro (Desactivar usuario)
     # @transaction.atomic
