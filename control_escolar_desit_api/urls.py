@@ -8,6 +8,8 @@ from control_escolar_desit_api.views import alumnos
 from control_escolar_desit_api.views import maestros
 from control_escolar_desit_api.views import auth
 from control_escolar_desit_api.views import bootstrap
+from control_escolar_desit_api.views import materias 
+
 
 urlpatterns = [
     #Create Admin
@@ -26,6 +28,10 @@ urlpatterns = [
         path('lista-alumnos/', alumnos.AlumnosAll.as_view()),
     #Total Users
         path('total-usuarios/', users.TotalUsers.as_view()),
+
+        path('materia/', materias.MateriasView.as_view()), 
+    # Lista de todas las materias
+        path('lista-materias/', materias.MateriasAll.as_view()),
     #Login
         path('login/', auth.CustomAuthToken.as_view()),
     #Logout

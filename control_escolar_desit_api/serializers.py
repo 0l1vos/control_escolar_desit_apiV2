@@ -11,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id','first_name','last_name', 'email')
-
+        
 class AdminSerializer(serializers.ModelSerializer):
     user=UserSerializer(read_only=True)
     class Meta:
@@ -28,4 +28,9 @@ class MaestroSerializer(serializers.ModelSerializer):
     user=UserSerializer(read_only=True)
     class Meta:
         model = Maestros
+        fields = '__all__'
+        
+class MateriaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Materias
         fields = '__all__'
